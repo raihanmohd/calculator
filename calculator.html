@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Calculator</title>
+<style>
+  :root{
+    --housing-1:#2b2d31;
+    --housing-2:#1c1d20;
+    --panel:#151517;
+    --led-amber:#ffb347;
+    --led-amber-dim:#5a3d1a;
+    --key-body:#3a3c41;
+    --key-body-op:#4a4038;
+    --key-body-eq:#c9762f;
+    --key-text:#e8e6e1;
+    --seam:#0a0a0b;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:radial-gradient(circle at 50% 20%, #38393d, #0e0e0f 75%);
+    font-family:'Courier New', monospace;
+  }
+  .unit{
+    width:320px;
+    background:linear-gradient(160deg, var(--housing-1), var(--housing-2));
+    border-radius:18px;
+    padding:22px;
+    box-shadow:
+      0 30px 60px rgba(0,0,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      inset 0 -2px 4px rgba(0,0,0,0.5);
+    border:1px solid var(--seam);
+  }
+  .brand{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:0 4px 14px;
+    color:#8a8a8f;
+    font-size:11px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+  }
+  .brand span:first-child{
+    color:#c7c5c0;
+    font-weight:bold;
+    font-size:13px;
+    letter-spacing:2px;
+  }
+  .screen{
+    background:var(--panel);
+    border-radius:8px;
+    padding:22px 16px 14px;
+    margin-bottom:18px;
+    box-shadow:inset 0 3px 10px rgba(0,0,0,0.8), inset 0 0 0 1px #000;
+    position:relative;
+    overflow:hidden;
+  }
+  .screen::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:repeating-linear-gradient(
+      0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px,
+      transparent 1px, transparent 3px
+    );
+    pointer-events:none;
+    opacity:0.4;
+  }
+  .expr{
+    min-height:16px;
+    text-align:right;
+    color:var(--led-amber-dim);
+    font-size:14px;
+    letter-spacing:1px;
+    overflow-x:auto;
+    white-space:nowrap;
+    text-shadow:0 0 6px rgba(255,179,71,0.15);
+  }
+  .result{
+    text-align:right;
+    color:var(--led-amber);
+    font-size:40px;
+    line-height:1.2;
+    letter-spacing:1px;
+    text-shadow:0 0 12px rgba(255,179,71,0.55), 0 0 2px rgba(255,179,71,0.8);
+    overflow-x:auto;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  .keys{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:10px;
+  }
+  button{
+    font-family:inherit;
+    font-size:18px;
+    color:var(--key-text);
+    background:linear-gradient(180deg, var(--key-body), #2c2d31);
+    border:none;
+    border-radius:8px;
+    padding:16px 0;
+    cursor:pointer;
+    box-shadow:
+      0 3px 0 #1d1e20,
+      0 4px 6px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+    transition:transform 0.05s ease, box-shadow 0.05s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button:active, button.pressed{
+    transform:translateY(3px);
+    box-shadow:
+      0 0 0 #1d1e20,
+      0 1px 2px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .op{
+    background:linear-gradient(180deg, var(--key-body-op), #362f28);
+    color:#ffcf9e;
+  }
+  .op:active, .op.pressed{ box-shadow:0 0 0 #1d1e20, 0 1px 2px rgba(0,0,0,0.4);}
+  .eq{
+    background:linear-gradient(180deg, var(--key-body-eq), #93551f);
+    color:#fff3e6;
+    box-shadow:
+      0 3px 0 #6e3d13,
+      0 4px 6px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .eq:active, .eq.pressed{
+    box-shadow:0 0 0 #6e3d13, 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .span2{ grid-column:span 2; }
+  .clear{ color:#ff8a7a; }
+</style>
+</head>
+<body>
+
+<div class="unit">
+  <div class="brand"><span>MK-7</span><span>solid state</span></div>
+  <div class="screen">
+    <div class="expr" id="expr">&nbsp;</div>
+    <div class="result" id="result">0</div>
+  </div>
+  <div class="keys">
+    <button class="clear" data-action="clear">C</button>
+    <button data-action="sign">±</button>
+    <button data-action="percent">%</button>
+    <button class="op" data-action="op" data-op="÷">÷</button>
+
+    <button data-num="7">7</button>
+    <button data-num="8">8</button>
+    <button data-num="9">9</button>
+    <button class="op" data-action="op" data-op="×">×</button>
+
+    <button data-num="4">4</button>
+    <button data-num="5">5</button>
+    <button data-num="6">6</button>
+    <button class="op" data-action="op" data-op="−">−</button>
+
+    <button data-num="1">1</button>
+    <button data-num="2">2</button>
+    <button data-num="3">3</button>
+    <button class="op" data-action="op" data-op="+">+</button>
+
+    <button class="span2" data-num="0">0</button>
+    <button data-action="decimal">.</button>
+    <button class="eq" data-action="equals">=</button>
+  </div>
+</div>
+
+<script>
+  const exprEl = document.getElementById('expr');
+  const resultEl = document.getElementById('result');
+
+  let current = '0';
+  let previous = null;
+  let operator = null;
+  let justEvaluated = false;
+
+  function formatNum(n){
+    if(!isFinite(n)) return 'Error';
+    let s = String(n);
+    if(s.length > 12) s = Number(n.toPrecision(10)).toString();
+    return s;
+  }
+
+  function updateDisplay(){
+    resultEl.textContent = current;
+    if(operator && previous !== null){
+      exprEl.textContent = `${previous} ${operator}`;
+    } else if(justEvaluated && operator === null && previous !== null){
+      exprEl.textContent = `${previous} =`;
+    } else {
+      exprEl.textContent = '\u00A0';
+    }
+  }
+
+  function inputDigit(d){
+    if(justEvaluated){
+      current = d;
+      justEvaluated = false;
+      previous = null;
+    } else if(current === '0'){
+      current = d;
+    } else {
+      current += d;
+    }
+    updateDisplay();
+  }
+
+  function inputDecimal(){
+    if(justEvaluated){
+      current = '0.';
+      justEvaluated = false;
+      previous = null;
+    } else if(!current.includes('.')){
+      current += '.';
+    }
+    updateDisplay();
+  }
+
+  function clearAll(){
+    current = '0';
+    previous = null;
+    operator = null;
+    justEvaluated = false;
+    updateDisplay();
+  }
+
+  function toggleSign(){
+    if(current !== '0'){
+      current = current.startsWith('-') ? current.slice(1) : '-' + current;
+    }
+    updateDisplay();
+  }
+
+  function percent(){
+    current = formatNum(parseFloat(current) / 100);
+    updateDisplay();
+  }
+
+  function compute(a, b, op){
+    a = parseFloat(a); b = parseFloat(b);
+    switch(op){
+      case '+': return a + b;
+      case '−': return a - b;
+      case '×': return a * b;
+      case '÷': return b === 0 ? NaN : a / b;
+    }
+  }
+
+  let pendingNewNumber = false;
+
+  function setOperator(op){
+    if(operator && previous !== null && !pendingNewNumber){
+      const r = compute(previous, current, operator);
+      previous = formatNum(r);
+      current = previous;
+    } else {
+      previous = current;
+    }
+    operator = op;
+    justEvaluated = false;
+    pendingNewNumber = true;
+    updateDisplay();
+  }
+
+  function inputDigitWrapped(d){
+    if(pendingNewNumber){
+      current = d;
+      pendingNewNumber = false;
+      justEvaluated = false;
+    } else {
+      inputDigit(d);
+      return;
+    }
+    updateDisplay();
+  }
+
+  function inputDecimalWrapped(){
+    if(pendingNewNumber){
+      current = '0.';
+      pendingNewNumber = false;
+      justEvaluated = false;
+      updateDisplay();
+    } else {
+      inputDecimal();
+    }
+  }
+
+  function equals(){
+    if(operator === null || previous === null) return;
+    const operand = pendingNewNumber ? previous : current;
+    const r = compute(previous, operand, operator);
+    const resultStr = formatNum(r);
+    exprEl.textContent = `${previous} ${operator} ${operand} =`;
+    resultEl.textContent = resultStr;
+    current = resultStr;
+    previous = resultStr;
+    operator = null;
+    justEvaluated = true;
+    pendingNewNumber = false;
+  }
+
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      flash(btn);
+      if(btn.dataset.num !== undefined){
+        inputDigitWrapped(btn.dataset.num);
+      } else if(btn.dataset.action === 'decimal'){
+        inputDecimalWrapped();
+      } else if(btn.dataset.action === 'clear'){
+        pendingNewNumber = false;
+        clearAll();
+      } else if(btn.dataset.action === 'sign'){
+        toggleSign();
+      } else if(btn.dataset.action === 'percent'){
+        percent();
+      } else if(btn.dataset.action === 'op'){
+        setOperator(btn.dataset.op);
+      } else if(btn.dataset.action === 'equals'){
+        equals();
+      }
+    });
+  });
+
+  function flash(btn){
+    btn.classList.add('pressed');
+    setTimeout(()=>btn.classList.remove('pressed'), 100);
+  }
+
+  const keyMap = { '+':'+', '-':'−', '*':'×', '/':'÷' };
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if(k >= '0' && k <= '9'){
+      inputDigitWrapped(k);
+      highlightKey(`[data-num="${k}"]`);
+    } else if(k === '.'){
+      inputDecimalWrapped();
+      highlightKey('[data-action="decimal"]');
+    } else if(k === '+' || k === '-' || k === '*' || k === '/'){
+      setOperator(keyMap[k]);
+      highlightKey(`[data-op="${keyMap[k]}"]`);
+    } else if(k === 'Enter' || k === '='){
+      e.preventDefault();
+      equals();
+      highlightKey('[data-action="equals"]');
+    } else if(k === 'Backspace'){
+      if(current.length > 1){ current = current.slice(0,-1); }
+      else { current = '0'; }
+      updateDisplay();
+    } else if(k === 'Escape'){
+      pendingNewNumber = false;
+      clearAll();
+      highlightKey('[data-action="clear"]');
+    } else if(k === '%'){
+      percent();
+      highlightKey('[data-action="percent"]');
+    }
+  });
+
+  function highlightKey(sel){
+    const el = document.querySelector(sel);
+    if(el) flash(el);
+  }
+
+  updateDisplay();
+</script>
+
+</body>
+</html>
